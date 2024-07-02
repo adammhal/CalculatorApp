@@ -8,9 +8,9 @@
 import SwiftUI
 import Foundation
 
-var answer = 0
+var answer = 0.0
 
-let operators : Set = ["+","-","×","÷"]
+//let operators : Set = ["+","-","×","÷"]
 
 let width = 70
 let height = 70
@@ -31,6 +31,7 @@ struct ContentView: View {
                         .foregroundColor(.black)
                         .font(/*@START_MENU_TOKEN@*/.title/*@END_MENU_TOKEN@*/)
                         .controlSize(.extraLarge)
+                        .frame(width: 300, height: 200)
                     
                     HStack{
                         Spacer()
@@ -164,6 +165,13 @@ struct ContentView: View {
                             .cornerRadius(20)
                     })
                     Button(action: {
+                        if(isValid(num: toCalculate)){
+                            if toCalculate != ""{
+                                toCalculate = negate(num: toCalculate)
+                            }
+                        } else {
+                            toCalculate = "INVALID INPUT"
+                        }
                         
                     }, label: {
                         Image("plusminus")
@@ -177,7 +185,11 @@ struct ContentView: View {
                                   toCalculate = ""
                               } else {
                                   if toCalculate != ""{
-                                      calculate()
+                                      if(isValid(num: toCalculate)){
+                                          calculate()
+                                      } else {
+                                          toCalculate = "INVALID INPUT"
+                                      }
                                   }
                               }
                     }, label: {
@@ -212,60 +224,190 @@ struct ContentView: View {
         }
     }
     func addToString(x: Int) {
-        if(justCalculated){
+        if toCalculate == "INVALID INPUT"{
             toCalculate = ""
-            justCalculated = false
         }
-        toCalculate += String(x)
+        if(justCalculated){
+            toCalculate = String(x)
+            justCalculated = false
+        } else {
+            toCalculate += String(x)
+        }
+        
     }
     func addToString(x: String) {
-        if(justCalculated){
+        if toCalculate == "INVALID INPUT"{
             toCalculate = ""
-            justCalculated = false
             return
         }
-        toCalculate += x
+        if(justCalculated){
+            toCalculate += x
+            justCalculated = false
+        } else {
+            toCalculate += x       
+        }
     }
     
     func calculate(){
         var calculateArr = toCalculate.components(separatedBy: " ")
         answer = 0
         for i in 0..<calculateArr.count{
-            print(calculateArr[i])
             if calculateArr[i] == "×"{
-                let a:Int? = Int(calculateArr[i-1])
-                let b:Int? = Int(calculateArr[i+1])
+                let left = firstValidIndex(nums: calculateArr, start: i, left: true)
+                let right = firstValidIndex(nums: calculateArr, start: i, left: false)
+                let a:Double? = Double(calculateArr[left])
+                let b:Double? = Double(calculateArr[right])
                 answer =  a! * b!
                 calculateArr[i] = String(answer)
-                print(i)
-                calculateArr[i+1] = "."
-                calculateArr[i-1] = "."
-                print(calculateArr)
+                calculateArr[left] = "."
+                calculateArr[right] = "."
+//                print(calculateArr)
+            }
+            if calculateArr[i] == "÷"{
+                let left = firstValidIndex(nums: calculateArr, start: i, left: true)
+                let right = firstValidIndex(nums: calculateArr, start: i, left: false)
+                let a:Double? = Double(calculateArr[left])
+                let b:Double? = Double(calculateArr[right])
+                if(b! == 0){
+                    toCalculate = "INVALID INPUT"
+                    return
+                }
+                answer =  a! / b!
+                calculateArr[i] = String(answer)
+                calculateArr[left] = "."
+                calculateArr[right] = "."
+//                print(calculateArr)
+            }
+        }
+        for i in 0..<calculateArr.count{
+            if calculateArr[i] == "+"{
+                let left = firstValidIndex(nums: calculateArr, start: i, left: true)
+                let right = firstValidIndex(nums: calculateArr, start: i, left: false)
+                let a:Double? = Double(calculateArr[left])
+                let b:Double? = Double(calculateArr[right])
+                answer =  a! + b!
+                calculateArr[i] = String(answer)
+                calculateArr[left] = "."
+                calculateArr[right] = "."
+//                print(calculateArr)
+            }
+            if calculateArr[i] == "-"{
+                let left = firstValidIndex(nums: calculateArr, start: i, left: true)
+                let right = firstValidIndex(nums: calculateArr, start: i, left: false)
+                let a:Double? = Double(calculateArr[left])
+                let b:Double? = Double(calculateArr[right])
+                answer =  a! - b!
+                calculateArr[i] = String(answer)
+                calculateArr[left] = "."
+                calculateArr[right] = "."
+//                print(calculateArr)
             }
         }
         
         let num = onlyNum(nums: calculateArr)
         
-        if(Int(num)! != -1){
-            toCalculate = num
-            justCalculated = true;
+//        print(num)
+        let temp = Double(num)!
+        if(Int(temp) != -1){
+            if isNotDecimal(num: Double(num)!){
+                toCalculate = String(Int(temp))
+                justCalculated = true;
+            } else {
+                toCalculate = num
+                justCalculated = true;
+            }
         }
     }
     func onlyNum(nums: [String]) -> String{
         var count = 0
         for c in nums{
-            if Int(c) != nil{
+//            print(Double(c) as Any)
+            if Double(c) != nil{
                 count+=1
             }
         }
         if count == 1{
             for c in nums{
-                if Int(c) != nil{
+                if Double(c) != nil{
                     return c
                 }
             }
         }
         return String(-1)
+    }
+    
+    func firstValidIndex(nums: [String], start: Int, left: Bool) -> Int{
+        if(left){
+            var i = start
+            while Double(nums[i]) == nil {
+                i-=1
+            }
+            return i
+        }
+        var i = start
+        while Double(nums[i]) == nil {
+            i+=1
+        }
+        return i
+    }
+    
+    func isNotDecimal(num: Double) -> Bool{
+        return num == floor(num)
+    }
+    
+    func rebuildString(nums: [String]) -> String{
+        var finalString = ""
+        for i in 0..<nums.count{
+            if i == 0{
+                finalString += nums[0]
+            } else {
+                finalString += " " + nums[i]
+            }
+        }
+        return finalString
+    }
+    
+    func negate(num: String) -> String{
+        var calculateArr = num.components(separatedBy: " ")
+        if calculateArr.count == 1{
+            let temp = Double(calculateArr[0])!
+            if isNotDecimal(num: temp){
+                return String(Int(temp) * -1)
+            } else {
+                return String(temp * -1)
+            }
+        } else {
+            let temp = Double(calculateArr[calculateArr.count - 1])!
+            if isNotDecimal(num: temp){
+                calculateArr[calculateArr.count - 1] = String(Int(temp) * -1)
+                return rebuildString(nums: calculateArr)
+            } else {
+                calculateArr[calculateArr.count - 1] = String(temp * -1)
+                return rebuildString(nums: calculateArr)
+            }
+        }
+    }
+    
+    func isValid(num: String) -> Bool{
+        let calculateArr = num.components(separatedBy: " ")
+        var alternate = false
+        for i in 0..<calculateArr.count{
+            if(!alternate){
+                if Double(calculateArr[i]) == nil {
+                    return false
+                }
+                alternate = !alternate
+            } else {
+                if Double(calculateArr[i]) != nil {
+                    return false
+                }
+                alternate = !alternate
+            }
+        }
+        if(Double(calculateArr[calculateArr.count - 1]) == nil){
+            return false
+        }
+        return true
     }
 }
 
